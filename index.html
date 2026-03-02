@@ -639,7 +639,7 @@ tbody td { padding: 13px 16px; font-size: 14px; color: var(--text); vertical-ali
         <div class="fg"><label>Data da Compra</label><input type="date" id="i_data"></div>
         <div class="fg"><label>Valor Investido (R$) *</label><input type="text" id="i_valor" placeholder="0,00"></div>
         <div class="fg"><label>Quantidade de Cotas</label><input type="number" id="i_qtd" step="0.01" placeholder="0"></div>
-        <div class="fg"><label>Provento (R$)</label><input type="text" id="i_prov" placeholder="0,00"></div>
+        <div class="fg"><label>Provento por Cota (R$)</label><input type="text" id="i_prov" placeholder="0,00"></div>
         <div class="fg"><label>Recorrência</label>
           <select id="i_rec">
             <option>Não</option><option>Diário</option><option>Mensal</option>
@@ -700,7 +700,7 @@ tbody td { padding: 13px 16px; font-size: 14px; color: var(--text); vertical-ali
               <th class="sortable" data-col="modalidade" onclick="sortBy('modalidade')">Modalidade</th>
               <th class="sortable" data-col="valor" onclick="sortBy('valor')">Valor</th>
               <th class="sortable" data-col="quantidade" onclick="sortBy('quantidade')">Qtd</th>
-              <th class="sortable" data-col="provento" onclick="sortBy('provento')">Provento</th>
+              <th class="sortable" data-col="provento" onclick="sortBy('provento')">Prov./Cota</th>
               <th>Recorrência</th>
               <th>Cota / Valoriz.</th>
               <th class="sortable" data-col="pct" onclick="sortBy('pct')">% Cart.</th>
@@ -883,7 +883,6 @@ function initLockCanvas() {
     ctx.strokeStyle='rgba(56,189,248,0.03)'; ctx.lineWidth=1;
     for(let x=0;x<W;x+=80){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
     for(let y=0;y<H;y+=80){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
-    // Animated chart line
     ctx.beginPath(); ctx.strokeStyle='rgba(52,211,153,0.2)'; ctx.lineWidth=1.5;
     for(let x=0;x<W;x+=3){ const y=H*0.7+Math.sin(x*0.01+t)*50+Math.sin(x*0.025+t*0.8)*20; x===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
     ctx.stroke();
@@ -915,7 +914,6 @@ function toggleTheme() {
   function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
   resize(); window.addEventListener('resize', resize);
 
-  // Floating mini-candles during splash
   class SplashCandle {
     constructor() { this.reset(true); }
     reset(init) {
@@ -941,7 +939,6 @@ function toggleTheme() {
     }
   }
 
-  // Live stock-chart line at bottom of splash
   let t = 0;
   function drawSplashChart() {
     const y0 = H * 0.7, amp = 40;
@@ -953,7 +950,6 @@ function toggleTheme() {
       x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.stroke();
-    // fill under
     ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
     ctx.fillStyle = 'rgba(52,211,153,0.03)';
     ctx.fill();
@@ -965,7 +961,6 @@ function toggleTheme() {
     if (!splash.parentNode) return;
     t += 0.01;
     ctx.clearRect(0,0,W,H);
-    // subtle grid
     ctx.strokeStyle = 'rgba(56,189,248,0.03)'; ctx.lineWidth = 1;
     for (let x = 0; x < W; x += 80) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
     for (let y = 0; y < H; y += 80) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
@@ -975,13 +970,12 @@ function toggleTheme() {
   }
   splashLoop();
 
-  // Sequence
   let statusTexts = ['Carregando ativos...','Calculando rentabilidades...','Preparando projeções...','Pronto!'];
   let si = 0;
   const statusEl = document.getElementById('splashStatusText');
 
   setTimeout(() => {
-    document.getElementById('ringFill').style.strokeDashoffset = '71'; // 75% fill
+    document.getElementById('ringFill').style.strokeDashoffset = '71';
     document.getElementById('splashTitle').style.opacity = '1';
     document.getElementById('splashTitle').style.transform = 'translateY(0)';
     document.getElementById('splashSub').style.opacity = '1';
@@ -1068,14 +1062,13 @@ let pendingDeleteId = null;
 
 /* ===================== GOOGLE SHEETS SYNC ===================== */
 const SYNC_KEY      = 'inv_sheets_url';
-const POLL_INTERVAL = 45000; // 45 segundos
+const POLL_INTERVAL = 45000;
 let syncUrl         = localStorage.getItem(SYNC_KEY) || '';
 let pollTimer       = null;
-let syncQueue       = [];   // fila de operações pendentes
+let syncQueue       = [];
 let isSyncing       = false;
 let lastSyncTs      = 0;
 
-// ── UI helpers ───────────────────────────────────────────────────
 function setSyncStatus(state, label) {
   const badge = document.getElementById('syncBadge');
   const lbl   = document.getElementById('syncLabel');
@@ -1113,7 +1106,6 @@ function saveCfg() {
   testConnection();
 }
 
-// ── Fetch wrapper com retry ───────────────────────────────────────
 async function sheetsFetch(params, body = null) {
   if (!syncUrl) throw new Error('URL não configurada');
   const url = syncUrl + '?' + new URLSearchParams(params).toString();
@@ -1125,7 +1117,6 @@ async function sheetsFetch(params, body = null) {
   return json;
 }
 
-// ── Test connection ───────────────────────────────────────────────
 async function testConnection() {
   if (!syncUrl) { setSyncStatus('offline', 'Sheets não configurado'); return; }
   setSyncStatus('syncing', 'Testando…');
@@ -1141,7 +1132,6 @@ async function testConnection() {
   }
 }
 
-// ── Push single item to Sheets ───────────────────────────────────
 async function pushItem(item) {
   if (!syncUrl) return;
   try {
@@ -1153,13 +1143,11 @@ async function pushItem(item) {
     setSyncStatus('synced', 'Sincronizado • ' + nowTime());
   } catch (err) {
     setSyncStatus('error', 'Erro ao salvar');
-    // Enfileira para retry
     syncQueue.push({ type: 'save', item });
     notif('Salvo localmente. Tentará sincronizar em breve.', 'error');
   }
 }
 
-// ── Delete item from Sheets ──────────────────────────────────────
 async function pushDelete(id) {
   if (!syncUrl) return;
   try {
@@ -1175,33 +1163,23 @@ async function pushDelete(id) {
   }
 }
 
-// ── Pull all from Sheets (Sheets → HTML) ─────────────────────────
 async function pullFromSheets(silent = false) {
   if (!syncUrl) return;
   if (!silent) setSyncStatus('syncing', 'Buscando dados…');
   try {
     const r = await sheetsFetch({ action: 'getAll' });
     if (r.data && Array.isArray(r.data)) {
-      // Merge: Sheets é a fonte de verdade para novos dados
-      // mas preservamos itens locais mais recentes (por updatedAt)
       const sheetsMap = {};
       r.data.forEach(it => { sheetsMap[it.id] = it; });
-
-      const localMap = {};
-      investimentos.forEach(it => { localMap[it.id] = it; });
-
-      // Unir: itens do Sheets + itens locais não encontrados no Sheets
-      const merged = r.data.slice(); // começa com todos do Sheets
+      const merged = r.data.slice();
       investimentos.forEach(it => {
         if (!sheetsMap[it.id]) {
-          // Existe só localmente → push para Sheets
           merged.push(it);
           pushItem(it);
         }
       });
-
       investimentos = merged;
-      save(false); // salva local sem re-push
+      save(false);
       renderAll();
       lastSyncTs = Date.now();
       setSyncStatus('synced', 'Sincronizado • ' + nowTime());
@@ -1211,7 +1189,6 @@ async function pullFromSheets(silent = false) {
   }
 }
 
-// ── Force full sync (HTML → Sheets) ─────────────────────────────
 async function forceSyncAll() {
   if (!syncUrl) { openCfg(); return; }
   setSyncStatus('syncing', 'Sincronizando tudo…');
@@ -1230,7 +1207,6 @@ async function forceSyncAll() {
   }
 }
 
-// ── Process retry queue ───────────────────────────────────────────
 async function processQueue() {
   if (!syncUrl || isSyncing || syncQueue.length === 0) return;
   isSyncing = true;
@@ -1239,12 +1215,11 @@ async function processQueue() {
     if (op.type === 'save')   await pushItem(op.item);
     if (op.type === 'delete') await pushDelete(op.id);
   } catch(e) {
-    syncQueue.unshift(op); // coloca de volta no início da fila
+    syncQueue.unshift(op);
   }
   isSyncing = false;
 }
 
-// ── Polling (Sheets → HTML automático) ───────────────────────────
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
   if (!syncUrl) return;
@@ -1254,7 +1229,6 @@ function startPolling() {
   }, POLL_INTERVAL);
 }
 
-// ── Helpers ──────────────────────────────────────────────────────
 function nowTime() {
   return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
@@ -1285,7 +1259,6 @@ function fmtInput(input) {
 }
 function save(pushToSheets = true) {
   localStorage.setItem('inv_standalone', JSON.stringify(investimentos));
-  if (pushToSheets) { /* caller handles per-item push */ }
 }
 function notif(msg, type='success') {
   const el = document.getElementById('notif');
@@ -1382,7 +1355,7 @@ function saveInvestimento() {
   if(id){ const idx=investimentos.findIndex(i=>i.id===item.id); investimentos[idx]=item; notif('Investimento atualizado!'); }
   else { investimentos.push(item); notif('Investimento adicionado!'); }
   save(); resetForm(); renderAll();
-  pushItem(item); // sincroniza com Sheets
+  pushItem(item);
 }
 
 function resetForm() {
@@ -1409,7 +1382,6 @@ function editInvestimento(id) {
   document.getElementById('i_qtd').value=item.quantidade||'';
   document.getElementById('i_prov').value=fmt(item.provento);
   document.getElementById('i_rec').value=item.recorrente||'Não';
-  // Extra fields
   toggleExtraFields();
   document.getElementById('i_cotaAquis').value=item.cotaAquisicao?fmt(item.cotaAquisicao):'';
   document.getElementById('i_cotaAtual').value=item.cotaAtual?fmt(item.cotaAtual):'';
@@ -1437,13 +1409,12 @@ function confirmDelete() {
   pendingDeleteId = null;
   save(); renderAll(); notif('Investimento excluído!');
   document.getElementById('deleteModal').classList.remove('active');
-  pushDelete(deletedId); // sincroniza com Sheets
+  pushDelete(deletedId);
 }
 function cancelDelete() {
   pendingDeleteId = null;
   document.getElementById('deleteModal').classList.remove('active');
 }
-// Close modal on overlay click
 document.getElementById('deleteModal').addEventListener('click', function(e){
   if(e.target===this) cancelDelete();
 });
@@ -1458,19 +1429,21 @@ function renderAll() {
 
 function updateHeader() {
   const total = investimentos.reduce((s,i)=>s+i.valor,0);
-  const mensal = investimentos.reduce((s,i)=>s+calcMonthlyProvento(i.provento,i.recorrente),0);
+  // ✅ FIX: multiplica provento pela quantidade de cotas
+  const mensal = investimentos.reduce((s,i)=>s+calcMonthlyProvento(i.provento*(i.quantidade||1),i.recorrente),0);
   document.getElementById('hPatrimonio').textContent='R$ '+fmt(total);
   document.getElementById('hProventos').textContent='R$ '+fmt(mensal);
 }
 
 function renderSummary() {
   const total=investimentos.reduce((s,i)=>s+i.valor,0);
-  // Proventos totais reais: provento × nº de ocorrências desde a data inicial
+  // ✅ FIX: provento acumulado total = provento × quantidade × ocorrências
   const provTot=investimentos.reduce((s,i)=>{
-    if(!i.provento||i.recorrente==='Não'||!i.recorrente) return s+i.provento;
-    return s+i.provento*calcOccurrences(i.data,i.recorrente);
+    if(!i.provento||i.recorrente==='Não'||!i.recorrente) return s+(i.provento*(i.quantidade||1));
+    return s+(i.provento*(i.quantidade||1))*calcOccurrences(i.data,i.recorrente);
   },0);
-  const provMensal=investimentos.reduce((s,i)=>s+calcMonthlyProvento(i.provento,i.recorrente),0);
+  // ✅ FIX: rendimento mensal = provento × quantidade
+  const provMensal=investimentos.reduce((s,i)=>s+calcMonthlyProvento(i.provento*(i.quantidade||1),i.recorrente),0);
   document.getElementById('sumTotal').textContent='R$ '+fmt(total);
   document.getElementById('sumCount').textContent=investimentos.length+' ativo'+(investimentos.length!==1?'s':'');
   document.getElementById('sumProvTotal').textContent='R$ '+fmt(provTot);
@@ -1492,7 +1465,8 @@ function renderModalitySection() {
     if(!summary[item.modalidade]) summary[item.modalidade]={total:0,count:0,mensal:0};
     summary[item.modalidade].total+=item.valor;
     summary[item.modalidade].count++;
-    summary[item.modalidade].mensal+=calcMonthlyProvento(item.provento,item.recorrente);
+    // ✅ FIX: rendimento mensal por modalidade = provento × quantidade
+    summary[item.modalidade].mensal+=calcMonthlyProvento(item.provento*(item.quantidade||1),item.recorrente);
   });
 
   const mods = Object.keys(summary).sort();
@@ -1511,7 +1485,6 @@ function renderModalitySection() {
     <div class="mod-summary-grid" id="modSummary"></div>
   `;
 
-  // Build mod cards
   const modGrid = document.getElementById('modSummary');
   modGrid.innerHTML = mods.map(mod=>{
     const d = summary[mod];
@@ -1526,7 +1499,6 @@ function renderModalitySection() {
     </div>`;
   }).join('');
 
-  // Donut legend
   const legend = document.getElementById('donutLegend');
   legend.innerHTML = mods.map(mod=>{
     const d = summary[mod];
@@ -1538,7 +1510,6 @@ function renderModalitySection() {
     </div>`;
   }).join('');
 
-  // Donut Chart
   if(donutChartInstance) donutChartInstance.destroy();
   const ctx = document.getElementById('donutChart').getContext('2d');
   donutChartInstance = new Chart(ctx, {
@@ -1600,8 +1571,10 @@ function renderTable(data) {
   empty.style.display='none';
 
   tbody.innerHTML = sorted.map(item=>{
+    const qty = item.quantidade || 1;
     const occ = calcOccurrences(item.data, item.recorrente);
-    const totalAcum = item.provento * occ;
+    // ✅ FIX: acumulado total = provento × quantidade × ocorrências
+    const totalAcum = item.provento * qty * occ;
     let recLabel = item.recorrente||'Não';
     if(item.recorrente&&item.recorrente!=='Não'&&item.provento>0&&occ>1){
       const unit = item.recorrente==='Diário'?'dias':item.recorrente==='Mensal'?'meses'
@@ -1609,12 +1582,12 @@ function renderTable(data) {
         :item.recorrente==='Semestral'?'semestres':'anos';
       recLabel = `${item.recorrente} · ${occ} ${unit}`;
     }
+    // Mostra acumulado total real (com quantidade)
     const acumCell = item.provento>0&&item.recorrente&&item.recorrente!=='Não'&&occ>1
       ? `<div class="rec-acum" style="font-size:11px;color:var(--accent2);font-family:'DM Mono',monospace;margin-top:3px;">↗ R$ ${fmt(totalAcum)} recebido</div>` : '';
     const pct = total>0?(item.valor/total*100):0;
     const badgeClass = MOD_BADGE[item.modalidade]||'badge-gray';
 
-    // Cota valorização
     const hasExtra = EXTRA_MODS.includes(item.modalidade)&&item.cotaAquisicao>0;
     let cotaCell = '';
     if(hasExtra && item.cotaAtual>0) {
@@ -1663,6 +1636,15 @@ function renderTable(data) {
       </tr>`;
     }
 
+    // Coluna Provento mostra: provento/cota e total mensal
+    const provMensalTotal = calcMonthlyProvento(item.provento * qty, item.recorrente);
+    const provCotaDisplay = item.provento > 0
+      ? `<div style="display:flex;flex-direction:column;gap:2px;">
+           <span class="${item.provento>0?'value-pos':'value-neu'}">R$ ${fmt(item.provento)}/cota</span>
+           ${qty>1?`<span style="font-size:11px;color:var(--accent2);font-family:'DM Mono',monospace;">= R$ ${fmt(provMensalTotal)}/mês</span>`:''}
+         </div>`
+      : `<span class="value-neu">R$ 0,00</span>`;
+
     return `<tr>
       <td>
         <div style="display:flex;align-items:center;gap:6px;">
@@ -1673,7 +1655,7 @@ function renderTable(data) {
       <td><span class="badge ${badgeClass}">${item.modalidade}</span></td>
       <td class="value-neu">R$ ${fmt(item.valor)}</td>
       <td style="color:var(--muted);">${item.quantidade>0?item.quantidade:'—'}</td>
-      <td class="${item.provento>0?'value-pos':'value-neu'}">R$ ${fmt(item.provento)}</td>
+      <td>${provCotaDisplay}</td>
       <td style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;">${recLabel}${acumCell}</td>
       <td>${cotaCell}</td>
       <td>
@@ -1722,7 +1704,6 @@ function calculateProjections() {
   const meses = projUnit==='anos'?projPeriod*12:projPeriod;
   const aporte = parseCur(document.getElementById('aporteInput').value);
 
-  // Update aporte badge
   const badge = document.getElementById('apBadge');
   if(aporte>0) {
     badge.textContent = `+ R$ ${fmt(aporte)}/mês incluído`;
@@ -1758,7 +1739,6 @@ function calculateProjections() {
     const rentMensal=Math.pow(1+rentAnual/100,1/12)-1;
     const share = totalBase>0?d.total/totalBase:0;
     const aporteMod = aporte*share;
-    // FV with contributions: PV*(1+r)^n + PMT*((1+r)^n - 1)/r
     const factor = Math.pow(1+rentMensal,meses);
     const vProj = d.total*factor + (rentMensal>0 ? aporteMod*(factor-1)/rentMensal : aporteMod*meses);
     const invested = d.total + aporteMod*meses;
@@ -1797,7 +1777,6 @@ function calculateProjections() {
       <div class="gain-line">+R$ ${fmt(totalGanho)} (+${pctTotal}%)</div>
     </div>`;
 
-  // Bar chart: atual vs final
   document.getElementById('barChartWrap').style.display='block';
   const barCtx = document.getElementById('projChart');
   if(projChartInstance) projChartInstance.destroy();
@@ -1823,15 +1802,11 @@ function calculateProjections() {
     }
   });
 
-  // Line chart: month-by-month evolution
   document.getElementById('lineChartWrap').style.display='block';
-
-  // Calculate weighted average monthly rate
   const modEntries = Object.entries(byMod);
   const avgRate = modEntries.reduce((s,[mod,d])=>s+(RENTABILIDADES[mod]||8)*d.total,0)/totalBase/100;
   const avgMonthly = Math.pow(1+avgRate,1/12)-1;
 
-  // Build timeline per modality (individual lines) + total
   const timeLabels = [];
   const today = new Date();
   for(let m=0;m<=meses;m++){
@@ -1840,7 +1815,6 @@ function calculateProjections() {
     timeLabels.push(d.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}));
   }
 
-  // Total line including aportes
   const totalTimeline = [];
   for(let m=0;m<=meses;m++){
     let v=0;
@@ -1854,7 +1828,6 @@ function calculateProjections() {
     totalTimeline.push(v);
   }
 
-  // Sem aporte line (for comparison when aporte > 0)
   const noAporteTimeline = [];
   if(aporte>0){
     for(let m=0;m<=meses;m++){
@@ -1870,7 +1843,6 @@ function calculateProjections() {
   const lineCtx = document.getElementById('timelineChart');
   if(lineChartInstance) lineChartInstance.destroy();
 
-  // Sample labels for readability (max ~24 ticks)
   const step = Math.max(1, Math.floor(meses/24));
   const sampledLabels = timeLabels.filter((_,i)=>i%step===0||i===meses);
   const sampledTotal = totalTimeline.filter((_,i)=>i%step===0||i===meses);
@@ -1924,7 +1896,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
   renderAll();
   document.querySelectorAll('.proj-btn')[3].classList.add('active');
 
-  // Inicializa Sheets sync
   if (syncUrl) {
     setSyncStatus('syncing', 'Conectando ao Sheets…');
     pullFromSheets(false).then(() => startPolling());
